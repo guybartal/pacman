@@ -56,11 +56,15 @@ export class InputHandler {
     const direction = this.keyToDirection(event.code);
     if (direction !== Direction.NONE) {
       event.preventDefault();
-      // Notify menu navigation listeners (arrow keys / WS)
-      if (this.menuNavigateCallback && (event.code === 'ArrowUp' || event.code === 'KeyW')) {
-        this.menuNavigateCallback('UP');
-      } else if (this.menuNavigateCallback && (event.code === 'ArrowDown' || event.code === 'KeyS')) {
-        this.menuNavigateCallback('DOWN');
+      // Menu navigation takes exclusive priority for UP/DOWN keys
+      if (this.menuNavigateCallback) {
+        if (event.code === 'ArrowUp' || event.code === 'KeyW') {
+          this.menuNavigateCallback('UP');
+          return;
+        } else if (event.code === 'ArrowDown' || event.code === 'KeyS') {
+          this.menuNavigateCallback('DOWN');
+          return;
+        }
       }
       if (this.callback) {
         this.callback(direction);

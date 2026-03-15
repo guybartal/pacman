@@ -5,3 +5,9 @@
 .squad/sessions/
 # Squad: SubSquad activation file (local to this machine)
 .squad-workstream
+
+# Build artifacts
+dist/
+
+# Vite / vitest cache
+node_modules/

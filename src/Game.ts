@@ -167,10 +167,7 @@ export class Game {
     this.level = DEMO_LEVEL.map(row => [...row]);
     this.countPellets();
 
-    // Apply difficulty settings to ghosts
-    this.applyDifficultySettings();
-
-    // Reset positions
+    // Reset positions (also applies difficulty settings to new ghost instances)
     this.resetPositions();
 
     // Start playing
@@ -320,7 +317,7 @@ export class Game {
       this.renderer.drawText('PRESS SPACE TO PLAY AGAIN', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2 + 30, '#FFFF00');
     } else if (this.state.status === GameState.LEVEL_COMPLETE) {
       this.renderer.drawText('LEVEL COMPLETE!', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2, '#00FF00');
-      this.renderer.drawText('PRESS SPACE TO CONTINUE', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2 + 30, '#FFFF00');
+      this.renderer.drawText('PRESS SPACE TO PLAY AGAIN', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2 + 30, '#FFFF00');
     }
   }
 }
