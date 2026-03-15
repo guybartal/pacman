@@ -25,10 +25,17 @@ export enum Direction {
 export enum GameState {
   LOADING = 'LOADING',
   MENU = 'MENU',
+  DIFFICULTY_SELECT = 'DIFFICULTY_SELECT',
   PLAYING = 'PLAYING',
   PAUSED = 'PAUSED',
   GAME_OVER = 'GAME_OVER',
   LEVEL_COMPLETE = 'LEVEL_COMPLETE',
+}
+
+export enum Difficulty {
+  EASY = 'EASY',
+  MEDIUM = 'MEDIUM',
+  HARD = 'HARD',
 }
 
 export enum GhostMode {

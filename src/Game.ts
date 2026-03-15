@@ -3,7 +3,7 @@
  * 
  * Orchestrates all game systems: rendering, input, entities, AI
  */
-import { GameLoop, CONFIG, GhostName, GameState } from './core';
+import { GameLoop, CONFIG, GhostName, GameState, Difficulty, DIFFICULTY_SETTINGS } from './core';
 import { createInitialState, GlobalGameState } from './core/GameStateManager';
 import { Pacman, Ghost } from './entities';
 import { Renderer } from './rendering';
@@ -84,7 +84,7 @@ export class Game {
       this.pacman.setDirection(direction);
     });
     
-    // Set up start/restart with Space key
+    // Set up start/restart with Space or Enter key
     this.input.onStart(() => {
       this.handleStart();
     });
@@ -92,6 +92,11 @@ export class Game {
     // Set up pause with P key
     this.input.onPause(() => {
       this.togglePause();
+    });
+
+    // Set up difficulty menu navigation with up/down arrows
+    this.input.onMenuNavigate((direction) => {
+      this.handleMenuNavigate(direction);
     });
     
     // Create game loop
@@ -125,15 +130,57 @@ export class Game {
   
   private handleStart(): void {
     if (this.state.status === GameState.MENU) {
-      // Start new game
-      this.state.status = GameState.PLAYING;
+      // Go to difficulty selection before starting
+      this.state.status = GameState.DIFFICULTY_SELECT;
+    } else if (this.state.status === GameState.DIFFICULTY_SELECT) {
+      // Confirm difficulty and start game
+      this.state.difficulty = this.state.selectedDifficulty;
+      this.startNewGame();
     } else if (this.state.status === GameState.GAME_OVER || 
                this.state.status === GameState.LEVEL_COMPLETE) {
-      // Restart game
-      this.restartGame();
+      // Go back to difficulty selection for a new game
+      this.state.status = GameState.DIFFICULTY_SELECT;
     } else if (this.state.status === GameState.PAUSED) {
       // Resume from pause
       this.state.status = GameState.PLAYING;
+    }
+  }
+
+  private handleMenuNavigate(direction: 'UP' | 'DOWN'): void {
+    if (this.state.status !== GameState.DIFFICULTY_SELECT) return;
+
+    const difficulties = [Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD];
+    const currentIndex = difficulties.indexOf(this.state.selectedDifficulty);
+    if (direction === 'UP') {
+      this.state.selectedDifficulty = difficulties[(currentIndex - 1 + difficulties.length) % difficulties.length];
+    } else {
+      this.state.selectedDifficulty = difficulties[(currentIndex + 1) % difficulties.length];
+    }
+  }
+
+  private startNewGame(): void {
+    // Reset score and lives
+    this.state.score = 0;
+    this.state.pacman.lives = 3;
+
+    // Reset level
+    this.level = DEMO_LEVEL.map(row => [...row]);
+    this.countPellets();
+
+    // Apply difficulty settings to ghosts
+    this.applyDifficultySettings();
+
+    // Reset positions
+    this.resetPositions();
+
+    // Start playing
+    this.state.status = GameState.PLAYING;
+  }
+
+  private applyDifficultySettings(): void {
+    const settings = DIFFICULTY_SETTINGS[this.state.difficulty];
+    for (const ghost of this.ghosts) {
+      ghost.speed = settings.ghostSpeed;
     }
   }
   
@@ -143,22 +190,6 @@ export class Game {
     } else if (this.state.status === GameState.PAUSED) {
       this.state.status = GameState.PLAYING;
     }
-  }
-  
-  private restartGame(): void {
-    // Reset score and lives
-    this.state.score = 0;
-    this.state.pacman.lives = 3;
-    
-    // Reset level
-    this.level = DEMO_LEVEL.map(row => [...row]);
-    this.countPellets();
-    
-    // Reset positions
-    this.resetPositions();
-    
-    // Start playing
-    this.state.status = GameState.PLAYING;
   }
   
   private update(deltaTime: number): void {
@@ -209,9 +240,11 @@ export class Game {
         this.state.score += 50;
         this.state.level.pelletsRemaining--;
         
-        // Energize - frighten all ghosts
+        // Energize - frighten all ghosts using difficulty-tuned duration
+        const powerPelletDuration = DIFFICULTY_SETTINGS[this.state.difficulty].powerPelletDuration;
+        const frightenedSpeed = DIFFICULTY_SETTINGS[this.state.difficulty].ghostFrightenedSpeed;
         for (const ghost of this.ghosts) {
-          ghost.setFrightened(CONFIG.POWER_PELLET_DURATION);
+          ghost.setFrightened(powerPelletDuration, frightenedSpeed);
         }
       }
     }
@@ -256,6 +289,9 @@ export class Game {
     for (const ghost of this.ghosts) {
       ghost.setGrid(this.level);
     }
+
+    // Re-apply difficulty settings to newly created ghosts
+    this.applyDifficultySettings();
     
     this.input.onDirectionChange((direction) => {
       this.pacman.setDirection(direction);
@@ -271,11 +307,17 @@ export class Game {
     
     if (this.state.status === GameState.MENU) {
       this.renderer.drawText('PRESS SPACE TO START', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2, '#FFFF00');
+    } else if (this.state.status === GameState.DIFFICULTY_SELECT) {
+      this.renderer.drawDifficultyMenu(this.state.selectedDifficulty);
+    } else if (this.state.status === GameState.PLAYING) {
+      // Show difficulty indicator at center-top during play
+      const settings = DIFFICULTY_SETTINGS[this.state.difficulty];
+      this.renderer.drawText(settings.label, CONFIG.CANVAS_WIDTH / 2, 15, settings.color);
     } else if (this.state.status === GameState.PAUSED) {
       this.renderer.drawText('PAUSED', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2, '#FFFF00');
     } else if (this.state.status === GameState.GAME_OVER) {
       this.renderer.drawText('GAME OVER', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2, '#FF0000');
-      this.renderer.drawText('PRESS SPACE TO RESTART', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2 + 30, '#FFFF00');
+      this.renderer.drawText('PRESS SPACE TO PLAY AGAIN', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2 + 30, '#FFFF00');
     } else if (this.state.status === GameState.LEVEL_COMPLETE) {
       this.renderer.drawText('LEVEL COMPLETE!', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2, '#00FF00');
       this.renderer.drawText('PRESS SPACE TO CONTINUE', CONFIG.CANVAS_WIDTH / 2, CONFIG.CANVAS_HEIGHT / 2 + 30, '#FFFF00');

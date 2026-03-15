@@ -180,10 +180,10 @@ export class Ghost extends BaseEntity {
     }
   }
   
-  setFrightened(duration: number): void {
+  setFrightened(duration: number, frightenedSpeed: number = CONFIG.GHOST_FRIGHTENED_SPEED): void {
     this.mode = GhostMode.FRIGHTENED;
     this.frightenedTimer = duration;
-    this.speed = CONFIG.GHOST_FRIGHTENED_SPEED;
+    this.speed = frightenedSpeed;
   }
   
   setMode(mode: GhostMode): void {

@@ -4,7 +4,7 @@
  * Single source of truth for all game state.
  * Other systems read from and write to this state.
  */
-import { GameState, GhostMode, Direction, Vector2 } from './types';
+import { GameState, GhostMode, Direction, Vector2, Difficulty } from './types';
 
 export interface PacmanState {
   position: Vector2;
@@ -34,6 +34,8 @@ export interface GlobalGameState {
   status: GameState;
   score: number;
   highScore: number;
+  difficulty: Difficulty;
+  selectedDifficulty: Difficulty;
   pacman: PacmanState;
   ghosts: Map<string, GhostState>;
   level: LevelState;
@@ -46,6 +48,8 @@ export function createInitialState(): GlobalGameState {
     status: GameState.LOADING,
     score: 0,
     highScore: 0,
+    difficulty: Difficulty.MEDIUM,
+    selectedDifficulty: Difficulty.MEDIUM,
     pacman: {
       position: { x: 14 * 16, y: 23 * 16 },
       direction: Direction.NONE,

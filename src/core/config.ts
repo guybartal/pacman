@@ -36,4 +36,31 @@ export const CONFIG = {
   },
 } as const;
 
+export const DIFFICULTY_SETTINGS = {
+  EASY: {
+    ghostSpeed: 55,
+    ghostFrightenedSpeed: 65,
+    powerPelletDuration: 9000,
+    label: 'EASY',
+    color: '#00FF00',
+    description: 'Slower ghosts, longer power pellets',
+  },
+  MEDIUM: {
+    ghostSpeed: 75,
+    ghostFrightenedSpeed: 50,
+    powerPelletDuration: 6000,
+    label: 'MEDIUM',
+    color: '#FFFF00',
+    description: 'Classic Pac-Man experience',
+  },
+  HARD: {
+    ghostSpeed: 100,
+    ghostFrightenedSpeed: 35,
+    powerPelletDuration: 3000,
+    label: 'HARD',
+    color: '#FF4444',
+    description: 'Fast ghosts, short power pellets',
+  },
+} as const;
+
 export type GameConfig = typeof CONFIG;

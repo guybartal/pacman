@@ -1,7 +1,8 @@
 /**
  * Renderer - Handles all canvas drawing operations
  */
-import { CONFIG } from '../core/config';
+import { CONFIG, DIFFICULTY_SETTINGS } from '../core/config';
+import { Difficulty } from '../core/types';
 import type { Renderable } from '../core/types';
 
 export class Renderer {
@@ -86,6 +87,66 @@ export class Renderer {
     this.ctx.font = '16px monospace';
     this.ctx.textAlign = 'center';
     this.ctx.fillText(text, x, y);
+    this.ctx.textAlign = 'left';
+  }
+
+  drawDifficultyMenu(selectedDifficulty: Difficulty): void {
+    const cx = CONFIG.CANVAS_WIDTH / 2;
+    const cy = CONFIG.CANVAS_HEIGHT / 2;
+
+    // Semi-transparent overlay
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+    this.ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+
+    // Title
+    this.ctx.fillStyle = '#FFFF00';
+    this.ctx.font = 'bold 20px monospace';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('SELECT DIFFICULTY', cx, cy - 80);
+
+    const difficulties = [Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD] as const;
+    const itemHeight = 54;
+    const startY = cy - 30;
+
+    for (let i = 0; i < difficulties.length; i++) {
+      const diff = difficulties[i];
+      const settings = DIFFICULTY_SETTINGS[diff];
+      const itemY = startY + i * itemHeight;
+      const isSelected = diff === selectedDifficulty;
+
+      if (isSelected) {
+        // Highlight box for selected difficulty
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+        this.ctx.fillRect(cx - 150, itemY - 20, 300, 44);
+        this.ctx.strokeStyle = settings.color;
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(cx - 150, itemY - 20, 300, 44);
+
+        // Arrow indicator
+        this.ctx.fillStyle = settings.color;
+        this.ctx.font = 'bold 16px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(`▶ ${settings.label} ◀`, cx, itemY);
+      } else {
+        this.ctx.fillStyle = '#888888';
+        this.ctx.font = '16px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(settings.label, cx, itemY);
+      }
+
+      // Description
+      this.ctx.fillStyle = isSelected ? '#CCCCCC' : '#555555';
+      this.ctx.font = '11px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(settings.description, cx, itemY + 18);
+    }
+
+    // Footer instructions
+    this.ctx.fillStyle = '#FFFF00';
+    this.ctx.font = '12px monospace';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('↑ ↓ to navigate | SPACE / ENTER to confirm', cx, cy + 140);
+
     this.ctx.textAlign = 'left';
   }
   

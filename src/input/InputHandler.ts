@@ -5,11 +5,13 @@ import { Direction } from '../core/types';
 
 export type InputCallback = (direction: Direction) => void;
 export type ActionCallback = () => void;
+export type MenuNavigateCallback = (direction: 'UP' | 'DOWN') => void;
 
 export class InputHandler {
   private callback: InputCallback | null = null;
   private startCallback: ActionCallback | null = null;
   private pauseCallback: ActionCallback | null = null;
+  private menuNavigateCallback: MenuNavigateCallback | null = null;
   private keysPressed: Set<string> = new Set();
   
   constructor() {
@@ -41,11 +43,28 @@ export class InputHandler {
       }
       return;
     }
+
+    // Handle Enter key (same as Space for menu confirmation)
+    if (event.code === 'Enter') {
+      event.preventDefault();
+      if (this.startCallback) {
+        this.startCallback();
+      }
+      return;
+    }
     
     const direction = this.keyToDirection(event.code);
-    if (direction !== Direction.NONE && this.callback) {
+    if (direction !== Direction.NONE) {
       event.preventDefault();
-      this.callback(direction);
+      // Notify menu navigation listeners (arrow keys / WS)
+      if (this.menuNavigateCallback && (event.code === 'ArrowUp' || event.code === 'KeyW')) {
+        this.menuNavigateCallback('UP');
+      } else if (this.menuNavigateCallback && (event.code === 'ArrowDown' || event.code === 'KeyS')) {
+        this.menuNavigateCallback('DOWN');
+      }
+      if (this.callback) {
+        this.callback(direction);
+      }
     }
   };
   
@@ -82,6 +101,10 @@ export class InputHandler {
   
   onPause(callback: ActionCallback): void {
     this.pauseCallback = callback;
+  }
+
+  onMenuNavigate(callback: MenuNavigateCallback): void {
+    this.menuNavigateCallback = callback;
   }
   
   isKeyPressed(code: string): boolean {

@@ -1,4 +1,4 @@
-export { CONFIG } from './config';
+export { CONFIG, DIFFICULTY_SETTINGS } from './config';
 export * from './types';
 export { GameLoop } from './GameLoop';
 export { createInitialState } from './GameStateManager';
