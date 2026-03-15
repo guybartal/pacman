@@ -41,4 +41,17 @@ export abstract class BaseEntity implements Entity, Renderable {
       y: Math.floor(this.position.y / 16),
     };
   }
+  
+  /**
+   * Get tile position based on entity center (position + half tile size)
+   * More accurate for pellet collection since it detects when center crosses tile
+   */
+  getCenterTilePosition(): Vector2 {
+    const centerX = this.position.x + 8;
+    const centerY = this.position.y + 8;
+    return {
+      x: Math.floor(centerX / 16),
+      y: Math.floor(centerY / 16),
+    };
+  }
 }
