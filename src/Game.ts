@@ -75,6 +75,9 @@ export class Game {
       new Ghost(GhostName.INKY, 14 * 16, 14 * 16),
       new Ghost(GhostName.CLYDE, 15 * 16, 14 * 16),
     ];
+    for (const ghost of this.ghosts) {
+      ghost.setGrid(this.level);
+    }
     
     // Set up input handling
     this.input.onDirectionChange((direction) => {
@@ -190,7 +193,9 @@ export class Game {
   }
   
   private checkPelletCollection(): void {
-    const tile = this.pacman.getTilePosition();
+    // Use center-based tile position for reliable pellet collection
+    // This ensures pellets are collected when Pac-Man's center crosses the tile
+    const tile = this.pacman.getCenterTilePosition();
     if (tile.y >= 0 && tile.y < this.level.length && 
         tile.x >= 0 && tile.x < this.level[0].length) {
       const tileValue = this.level[tile.y][tile.x];
@@ -248,6 +253,9 @@ export class Game {
       new Ghost(GhostName.INKY, 14 * 16, 14 * 16),
       new Ghost(GhostName.CLYDE, 15 * 16, 14 * 16),
     ];
+    for (const ghost of this.ghosts) {
+      ghost.setGrid(this.level);
+    }
     
     this.input.onDirectionChange((direction) => {
       this.pacman.setDirection(direction);
