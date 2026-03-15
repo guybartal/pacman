@@ -68,3 +68,23 @@
 - MIT License
 
 **PR:** #4 — Closes #3
+
+### 2026-03-15 — Code Review: Difficulty Selection (PR #8)
+
+**Feature:** Adds difficulty selection menu (EASY/MEDIUM/HARD) before starting a game.
+
+**Architecture Review:**
+- State flow: MENU → DIFFICULTY_SELECT → PLAYING works correctly
+- Clean separation between config constants (DIFFICULTY_SETTINGS) and runtime state
+- Ghost.setFrightened() properly extended to accept optional speed parameter
+
+**Code Quality Issues Found:**
+1. **Input Handler Coupling:** InputHandler calls both menuNavigateCallback AND directionChangeCallback for up/down keys, regardless of game state. Harmless but sloppy—callbacks should be state-aware or mutually exclusive.
+2. **Wasteful applyDifficultySettings():** Called in startNewGame() before resetPositions(), which creates new ghosts. The first call is wasted; only the call inside resetPositions() matters.
+3. **Build Artifacts in PR:** dist/ and node_modules/.vite/ files committed. Root issue: .gitignore missing standard entries (dist/, node_modules/).
+
+**Test Coverage Gaps:**
+- Tests only validate DIFFICULTY_SETTINGS constants
+- Missing: state transition tests, ghost speed application tests, menu navigation tests
+
+**Verdict:** REQUEST CHANGES — fix input handler and remove build artifacts before merge.
