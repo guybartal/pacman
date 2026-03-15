@@ -61,3 +61,29 @@
 - Tests were written for a JS module structure, but source was rebuilt in TypeScript - classic parallel development desync
 - `as any` type casts in Game.ts indicate rushed integration between modules
 - TypeScript passes but runtime behavior may differ due to enum vs string comparisons
+
+---
+
+### Bug Fix: Pellet Collection (2026-03-15) - Issue #1
+
+#### Problem
+Pac-Man doesn't eat coins all the time - sometimes passes over them without collecting.
+
+#### Root Cause
+`checkPelletCollection()` in `Game.ts` used `pacman.getTilePosition()` which calculates tile based on entity's **top-left corner** (`Math.floor(position.x / 16)`). When Pac-Man moves, its center can be over a pellet tile while the top-left corner is still in the previous tile, causing the pellet to be missed.
+
+#### The Fix
+1. Added `getCenterTilePosition()` to `BaseEntity.ts` - calculates tile based on entity center (position + 8 pixels)
+2. Changed `checkPelletCollection()` to use `getCenterTilePosition()` instead of `getTilePosition()`
+
+This ensures pellets are collected when Pac-Man's **center** crosses into the tile, which aligns with visual expectation.
+
+#### Test Added
+Created `src/__tests__/pellet-collection.test.ts` with 8 test cases:
+- Center-based tile detection accuracy
+- Edge case: tile boundaries
+- Edge case: fractional positions from movement
+- Regression test: approaching pellet from different directions
+
+#### Commit
+`b0997de` - "Fix pellet collection using center-based tile detection - Fixes #1"

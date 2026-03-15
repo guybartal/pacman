@@ -32,3 +32,39 @@
 - Ghost AI uses classic targeting: Blinky direct-chases, Pinky ambushes, Inky uses Blinky's position, Clyde is shy
 
 **Canvas:** 448x496 (28x31 tiles × 16px)
+
+### 2026-03-XX — Fixed Ghost Movement (Issue #2)
+
+**Problem:** Ghosts rendered but never moved.
+
+**Root Cause:**
+1. Ghost.direction defaulted to `Direction.NONE` (inherited from BaseEntity)
+2. Ghost had no grid reference to check wall collisions
+3. Ghost.update() called move() but with no direction, velocity was zero
+4. GhostAI calculated `targetTile` but Ghost never used it to pick a direction
+
+**Fix:**
+- Added `Ghost.setGrid()` method (mirrors Pacman's pattern)
+- Added `Ghost.chooseDirection()` AI logic:
+  - Only recalculates at tile centers (avoids jitter)
+  - Gets valid directions (non-wall, non-reverse except when frightened)
+  - Picks direction that minimizes distance to targetTile
+- Called `ghost.setGrid(this.level)` in Game constructor and resetPositions()
+
+**Commit:** aeb9210 — "Fix ghost movement - add setGrid() and AI direction choosing"
+
+### 2026-03-15 — Added README Documentation (Issue #3)
+
+**Task:** Create comprehensive README.md covering project overview, setup, and contribution guidelines.
+
+**Key sections added:**
+- Feature overview with ghost AI behavior descriptions
+- Prerequisites: Node.js v18+
+- Setup: `npm install` then `npm run dev` (port 5173)
+- Scripts: `dev`, `build`, `preview`, `typecheck`, `test`
+- Controls table: Arrow/WASD, P (pause), Space (start/restart)
+- Project structure documentation
+- Contributing guidelines (fork → branch → PR)
+- MIT License
+
+**PR:** #4 — Closes #3
