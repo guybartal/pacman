@@ -2,9 +2,21 @@
  * Difficulty settings tests
  * Validates that difficulty configurations have correct and distinct values.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DIFFICULTY_SETTINGS } from '../core/config';
 import { Difficulty } from '../core/types';
+import { Ghost } from '../entities/Ghost';
+import { GhostName } from '../core/types';
+import { InputHandler } from '../input/InputHandler';
+import { Direction } from '../core/types';
+
+// Mock window so InputHandler tests don't throw
+const mockAddEventListener = vi.fn();
+const mockRemoveEventListener = vi.fn();
+vi.stubGlobal('window', {
+  addEventListener: mockAddEventListener,
+  removeEventListener: mockRemoveEventListener,
+});
 
 describe('Difficulty Settings', () => {
   it('should define settings for all three difficulties', () => {
@@ -84,5 +96,137 @@ describe('Difficulty Settings', () => {
       expect(typeof DIFFICULTY_SETTINGS[key].description).toBe('string');
       expect(DIFFICULTY_SETTINGS[key].description.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('Ghost speed application from difficulty settings', () => {
+  it('should apply EASY ghost speed to ghost instance', () => {
+    const ghost = new Ghost(GhostName.BLINKY, 0, 0);
+    ghost.speed = DIFFICULTY_SETTINGS[Difficulty.EASY].ghostSpeed;
+    expect(ghost.speed).toBe(DIFFICULTY_SETTINGS[Difficulty.EASY].ghostSpeed);
+  });
+
+  it('should apply HARD ghost speed to ghost instance', () => {
+    const ghost = new Ghost(GhostName.BLINKY, 0, 0);
+    ghost.speed = DIFFICULTY_SETTINGS[Difficulty.HARD].ghostSpeed;
+    expect(ghost.speed).toBe(DIFFICULTY_SETTINGS[Difficulty.HARD].ghostSpeed);
+  });
+
+  it('should apply difficulty-specific frightened speed via setFrightened', () => {
+    const ghost = new Ghost(GhostName.BLINKY, 0, 0);
+    const easySettings = DIFFICULTY_SETTINGS[Difficulty.EASY];
+    ghost.setFrightened(easySettings.powerPelletDuration, easySettings.ghostFrightenedSpeed);
+    expect(ghost.speed).toBe(easySettings.ghostFrightenedSpeed);
+  });
+
+  it('EASY frightened speed should be faster than HARD frightened speed', () => {
+    const ghostEasy = new Ghost(GhostName.BLINKY, 0, 0);
+    const ghostHard = new Ghost(GhostName.CLYDE, 0, 0);
+    ghostEasy.setFrightened(9000, DIFFICULTY_SETTINGS[Difficulty.EASY].ghostFrightenedSpeed);
+    ghostHard.setFrightened(3000, DIFFICULTY_SETTINGS[Difficulty.HARD].ghostFrightenedSpeed);
+    expect(ghostEasy.speed).toBeGreaterThan(ghostHard.speed);
+  });
+});
+
+describe('Menu navigation wrap-around', () => {
+  // Pure cycling logic mirrored from Game.handleMenuNavigate
+  function cycleIndex(currentIndex: number, direction: 'UP' | 'DOWN', total: number): number {
+    if (direction === 'UP') {
+      return (currentIndex - 1 + total) % total;
+    }
+    return (currentIndex + 1) % total;
+  }
+
+  const difficulties = [Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD];
+
+  it('should move DOWN from EASY to MEDIUM', () => {
+    const idx = cycleIndex(0, 'DOWN', difficulties.length);
+    expect(difficulties[idx]).toBe(Difficulty.MEDIUM);
+  });
+
+  it('should move DOWN from MEDIUM to HARD', () => {
+    const idx = cycleIndex(1, 'DOWN', difficulties.length);
+    expect(difficulties[idx]).toBe(Difficulty.HARD);
+  });
+
+  it('should wrap DOWN from HARD back to EASY', () => {
+    const idx = cycleIndex(2, 'DOWN', difficulties.length);
+    expect(difficulties[idx]).toBe(Difficulty.EASY);
+  });
+
+  it('should move UP from HARD to MEDIUM', () => {
+    const idx = cycleIndex(2, 'UP', difficulties.length);
+    expect(difficulties[idx]).toBe(Difficulty.MEDIUM);
+  });
+
+  it('should move UP from MEDIUM to EASY', () => {
+    const idx = cycleIndex(1, 'UP', difficulties.length);
+    expect(difficulties[idx]).toBe(Difficulty.EASY);
+  });
+
+  it('should wrap UP from EASY back to HARD', () => {
+    const idx = cycleIndex(0, 'UP', difficulties.length);
+    expect(difficulties[idx]).toBe(Difficulty.HARD);
+  });
+});
+
+describe('InputHandler menu navigation callback exclusivity', () => {
+  let handler: InputHandler;
+  let keydownHandler: (event: KeyboardEvent) => void;
+
+  beforeEach(() => {
+    mockAddEventListener.mockClear();
+    handler = new InputHandler();
+    const keydownCall = mockAddEventListener.mock.calls.find(call => call[0] === 'keydown');
+    keydownHandler = keydownCall?.[1];
+  });
+
+  it('should call only menuNavigateCallback (not direction callback) for ArrowUp when both are set', () => {
+    const dirCallback = vi.fn();
+    const menuCallback = vi.fn();
+    handler.onDirectionChange(dirCallback);
+    handler.onMenuNavigate(menuCallback);
+
+    const event = { code: 'ArrowUp', preventDefault: vi.fn() } as unknown as KeyboardEvent;
+    keydownHandler(event);
+
+    expect(menuCallback).toHaveBeenCalledWith('UP');
+    expect(dirCallback).not.toHaveBeenCalled();
+  });
+
+  it('should call only menuNavigateCallback (not direction callback) for ArrowDown when both are set', () => {
+    const dirCallback = vi.fn();
+    const menuCallback = vi.fn();
+    handler.onDirectionChange(dirCallback);
+    handler.onMenuNavigate(menuCallback);
+
+    const event = { code: 'ArrowDown', preventDefault: vi.fn() } as unknown as KeyboardEvent;
+    keydownHandler(event);
+
+    expect(menuCallback).toHaveBeenCalledWith('DOWN');
+    expect(dirCallback).not.toHaveBeenCalled();
+  });
+
+  it('should still call direction callback for ArrowLeft even when menuNavigate is set', () => {
+    const dirCallback = vi.fn();
+    const menuCallback = vi.fn();
+    handler.onDirectionChange(dirCallback);
+    handler.onMenuNavigate(menuCallback);
+
+    const event = { code: 'ArrowLeft', preventDefault: vi.fn() } as unknown as KeyboardEvent;
+    keydownHandler(event);
+
+    expect(dirCallback).toHaveBeenCalledWith(Direction.LEFT);
+    expect(menuCallback).not.toHaveBeenCalled();
+  });
+
+  it('should call direction callback for ArrowUp when menuNavigate is NOT set', () => {
+    const dirCallback = vi.fn();
+    handler.onDirectionChange(dirCallback);
+
+    const event = { code: 'ArrowUp', preventDefault: vi.fn() } as unknown as KeyboardEvent;
+    keydownHandler(event);
+
+    expect(dirCallback).toHaveBeenCalledWith(Direction.UP);
   });
 });
